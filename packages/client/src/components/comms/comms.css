@@ -1,0 +1,374 @@
+/* ===== Text Chat Box & Voice Controls ===== */
+.comms-chat {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left, 0px));
+  bottom: max(94px, calc(env(safe-area-inset-bottom, 0px) + 86px));
+  z-index: 15;
+  width: min(340px, calc(100vw - 28px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  opacity: 1;
+}
+
+.comms-chat--faded {
+  opacity: 0.4;
+}
+
+.comms-chat--faded:hover,
+.comms-chat--open {
+  opacity: 1;
+}
+
+/* Mobile / Touch: cleanly clear of bottom-left joystick (142px tall) and top HP bar */
+.comms-chat--touch {
+  bottom: max(160px, calc(env(safe-area-inset-bottom, 0px) + 154px));
+  width: min(260px, 48vw);
+}
+
+.comms-mic-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.comms-mic-btn {
+  min-block-size: 30px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background-color: rgba(15, 23, 42, 0.8);
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.comms-mic-btn:hover {
+  border-color: #38bdf8;
+  background-color: rgba(30, 41, 59, 0.94);
+}
+
+.comms-mic-btn--connected {
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #e0f2fe;
+}
+
+.comms-mic-btn--live {
+  border-color: #4ade80;
+  background-color: rgba(20, 83, 45, 0.86);
+  color: #dcfce7;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.45);
+}
+
+.comms-mic-btn--muted {
+  border-color: #f87171;
+  background-color: rgba(127, 29, 29, 0.78);
+  color: #fecaca;
+}
+
+.comms-mic-btn--ptt {
+  border-color: #facc15;
+  color: #fef08a;
+}
+
+.comms-mic-error {
+  padding: 5px 10px;
+  border-radius: 8px;
+  background-color: rgba(127, 29, 29, 0.85);
+  border: 1px solid rgba(248, 113, 113, 0.65);
+  color: #fecaca;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.comms-chat-feed {
+  max-height: 148px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background-color: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+}
+
+.comms-chat--touch .comms-chat-feed {
+  max-height: 98px;
+  padding: 6px 8px;
+}
+
+.comms-chat-line {
+  font-size: 0.8rem;
+  line-height: 1.32;
+  color: #f1f5f9;
+  word-break: break-word;
+  text-shadow: 0 1px 2px rgba(2, 6, 23, 0.85);
+}
+
+.comms-chat-line--quick {
+  color: #bae6fd;
+  font-weight: 600;
+}
+
+.comms-chat-sender {
+  font-weight: 800;
+}
+
+.comms-chat-sep {
+  margin: 0 4px 0 2px;
+  color: #94a3b8;
+}
+
+.comms-chat-form {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.comms-chat-input {
+  flex: 1;
+  min-width: 0;
+  min-block-size: 36px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.65);
+  background-color: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  font-size: 0.84rem;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.comms-chat-input:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.comms-chat-send {
+  min-inline-size: 54px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid #38bdf8;
+  background-color: rgba(2, 132, 199, 0.9);
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comms-chat-send:hover {
+  background-color: #0284c7;
+}
+
+.comms-chat-hint {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(203, 213, 225, 0.75);
+  padding-left: 4px;
+  user-select: none;
+}
+
+/* ===== Quick-Chat Radial Wheel ===== */
+.comms-touch-qc-btn {
+  position: fixed;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  top: max(124px, calc(env(safe-area-inset-top, 0px) + 114px));
+  z-index: 16;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 189, 248, 0.65);
+  background-color: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.45);
+}
+
+.comms-touch-qc-btn--active {
+  border-color: #4ade80;
+  background-color: rgba(20, 83, 45, 0.88);
+}
+
+.comms-touch-qc-label {
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #bae6fd;
+}
+
+.comms-wheel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(2, 6, 23, 0.28);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.comms-wheel-container {
+  position: relative;
+  width: min(288px, 84vmin);
+  height: min(288px, 84vmin);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 14px 36px rgba(2, 6, 23, 0.72));
+}
+
+.comms-wheel-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.comms-wheel-slice {
+  cursor: pointer;
+}
+
+.comms-wheel-slice path {
+  fill: rgba(15, 23, 42, 0.86);
+  stroke: rgba(148, 163, 184, 0.35);
+  stroke-width: 1.5;
+  transition: fill 0.1s ease, stroke 0.1s ease;
+}
+
+.comms-wheel-slice:hover path,
+.comms-wheel-slice--active path {
+  fill: rgba(2, 132, 199, 0.9);
+  stroke: #7dd3fc;
+  stroke-width: 2;
+}
+
+.comms-wheel-icon {
+  font-size: 17px;
+  pointer-events: none;
+}
+
+.comms-wheel-text {
+  fill: #f8fafc;
+  font-size: 9.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.comms-wheel-key {
+  fill: #94a3b8;
+  font-size: 8.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.comms-wheel-slice--active .comms-wheel-key {
+  fill: #e0f2fe;
+}
+
+.comms-wheel-center {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 189, 248, 0.55);
+  background-color: rgba(15, 23, 42, 0.94);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  text-align: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.comms-wheel-center-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.comms-wheel-center-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: #7dd3fc;
+  line-height: 1.15;
+}
+
+.comms-wheel-center-title {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #e2e8f0;
+}
+
+.comms-wheel-center-hint {
+  font-size: 0.58rem;
+  color: #94a3b8;
+}
+
+/* ===== 3D Floating Speech Bubble ===== */
+.comms-speech-bubble {
+  position: relative;
+  padding: 5px 11px;
+  border-radius: 9999px;
+  background-color: rgba(15, 23, 42, 0.9);
+  border: 1.5px solid rgba(56, 189, 248, 0.8);
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(8px);
+  animation: comms-bubble-pop 0.18s ease-out;
+}
+
+.comms-speech-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border-width: 6px 5px 0 5px;
+  border-style: solid;
+  border-color: rgba(56, 189, 248, 0.85) transparent transparent transparent;
+}
+
+.comms-speech-bubble-text {
+  letter-spacing: 0.01em;
+}
+
+@keyframes comms-bubble-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (pointer: coarse) {
+  .comms-mic-btn {
+    min-block-size: 36px;
+    padding: 6px 11px;
+  }
+}

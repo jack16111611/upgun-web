@@ -1,0 +1,19 @@
+{
+  "name": "upgun-web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev -w @upgun/server\" \"npm run dev -w @upgun/client\"",
+    "typecheck": "npm run typecheck --workspaces",
+    "build": "npm run build -w @upgun/shared && npm run build -w @upgun/server && npm run build -w @upgun/client"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "concurrently": "^10.0.7",
+    "typescript": "^7.0.2"
+  }
+}

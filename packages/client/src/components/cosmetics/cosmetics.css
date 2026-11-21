@@ -1,0 +1,151 @@
+.cosmetics-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.cosmetics-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cosmetics-picker__preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cosmetics-picker__badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 35%, rgba(56, 189, 248, 0.18), rgba(15, 23, 42, 0.92));
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cosmetics-picker__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cosmetics-picker__title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+}
+
+.cosmetics-picker__summary {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cosmetics-picker__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cosmetics-picker__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.cosmetics-picker__hats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cosmetics-hat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  min-block-size: 32px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.72);
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.1s ease;
+}
+
+.cosmetics-hat-pill:hover {
+  background: rgba(51, 65, 85, 0.85);
+  border-color: rgba(148, 163, 184, 0.55);
+  color: #f8fafc;
+}
+
+.cosmetics-hat-pill--active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #f8fafc;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.cosmetics-hat-pill:focus-visible,
+.cosmetics-color-swatch:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+.cosmetics-picker__colors {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cosmetics-color-swatch {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.cosmetics-color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.cosmetics-color-swatch--active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #0f172a, 0 0 0 4px #38bdf8;
+  transform: scale(1.08);
+}
+
+.cosmetics-color-swatch__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
