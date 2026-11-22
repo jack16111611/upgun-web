@@ -25,7 +25,32 @@ import { useSettingsStore } from "../store/settingsStore";
 import { attachRoomEventListeners } from "./roomEventListeners";
 import { ArenaStateSync, type RawArenaState } from "./stateSync";
 
-const SERVER_URL = "ws://localhost:2567";
+const DEFAULT_PROD_SERVER_URL = "wss://upgun-server.onrender.com";
+
+function getFallbackServerUrl(): string {
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ) {
+    return "ws://localhost:2567";
+  }
+  return DEFAULT_PROD_SERVER_URL;
+}
+
+function normalizeServerUrl(raw: unknown): string {
+  const fallback = getFallbackServerUrl();
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value) {
+    return fallback;
+  }
+  const normalized = value
+    .replace(/^https:\/\//i, "wss://")
+    .replace(/^http:\/\//i, "ws://")
+    .replace(/\/+$/, "");
+  return normalized || fallback;
+}
+
+const SERVER_URL = normalizeServerUrl(import.meta.env.VITE_SERVER_URL);
 
 const client = new Client(SERVER_URL);
 const stateSync = new ArenaStateSync();
@@ -147,7 +172,7 @@ async function runConnection(
     const msg =
       err instanceof Error && err.message
         ? err.message
-        : "Could not connect to server at ws://localhost:2567.";
+        : `Could not connect to server at ${SERVER_URL}.`;
     useGameStore.getState().setIdle(msg);
     useGameStore.getState().setLobbyOpen(true);
     return false;
