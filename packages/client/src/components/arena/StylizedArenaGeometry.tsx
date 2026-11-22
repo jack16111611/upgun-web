@@ -9,10 +9,12 @@ import {
 } from "three";
 import type {
   ArenaBlock,
+  ArenaDecorPreset,
   ArenaMapDefinition,
   BlockMaterialKind,
   JumpPadDefinition,
 } from "@upgun/shared";
+import { ArchitecturalBlockDetail } from "./ArchitecturalPieces";
 import { ArenaDecorations } from "./ArenaDecorations";
 import { getMaterialTextures } from "./proceduralTextures";
 
@@ -55,10 +57,10 @@ function computeSunLightPosition(
 ): [number, number, number] {
   const [x, y, z] = sunPosition;
   const len = Math.hypot(x, y, z) || 1;
-  const dist = 36;
+  const dist = 38;
   return [
     (x / len) * dist,
-    Math.max(18, (y / len) * dist),
+    Math.max(20, (y / len) * dist),
     (z / len) * dist,
   ];
 }
@@ -67,10 +69,12 @@ function StylizedBlockMesh({
   block,
   floorMaterial,
   accentColor,
+  preset,
 }: {
   block: ArenaBlock;
   floorMaterial: BlockMaterialKind;
   accentColor: string;
+  preset: ArenaDecorPreset;
 }) {
   const materialKind: BlockMaterialKind =
     block.material ?? (block.kind === "floor" ? floorMaterial : "concrete");
@@ -86,9 +90,6 @@ function StylizedBlockMesh({
   );
 
   const isFloor = block.kind === "floor";
-  const isPlatform = block.kind === "platform";
-  const isRamp = block.kind === "ramp";
-  const [sx, sy, sz] = block.size;
 
   return (
     <group position={block.position} rotation={block.rotation ?? [0, 0, 0]}>
@@ -98,36 +99,20 @@ function StylizedBlockMesh({
           color={tintColor}
           map={textureSet.map}
           bumpMap={textureSet.bumpMap}
-          bumpScale={isFloor ? 0.04 : 0.055}
+          bumpScale={isFloor ? 0.045 : 0.06}
+          roughnessMap={textureSet.roughnessMap}
           roughness={textureSet.roughness}
           metalness={textureSet.metalness}
         />
       </mesh>
 
-      {/* Crisp sunlit architectural lip trim on elevated platforms */}
-      {isPlatform && sy <= 0.65 && (
-        <mesh position={[0, sy * 0.5 - 0.035, 0]} receiveShadow>
-          <boxGeometry args={[sx + 0.04, 0.07, sz + 0.04]} />
-          <meshStandardMaterial
-            color={accentColor}
-            roughness={0.5}
-            metalness={0.12}
-          />
-        </mesh>
-      )}
-
-      {/* Subtle architectural side curbs on walkable ramps */}
-      {isRamp && (
-        <>
-          <mesh position={[-sx * 0.5 - 0.02, sy * 0.35, 0]}>
-            <boxGeometry args={[0.06, 0.09, sz]} />
-            <meshStandardMaterial color={accentColor} roughness={0.55} />
-          </mesh>
-          <mesh position={[sx * 0.5 + 0.02, sy * 0.35, 0]}>
-            <boxGeometry args={[0.06, 0.09, sz]} />
-            <meshStandardMaterial color={accentColor} roughness={0.55} />
-          </mesh>
-        </>
+      {!isFloor && (
+        <ArchitecturalBlockDetail
+          block={block}
+          materialKind={materialKind}
+          accentColor={accentColor}
+          preset={preset}
+        />
       )}
     </group>
   );
@@ -178,15 +163,15 @@ function StylizedJumpPadMesh({ pad }: { pad: JumpPadDefinition }) {
 
   return (
     <group position={pad.position} name={`jump_pad_${pad.id}`}>
-      {/* Brushed sunlit stone/steel rim housing */}
+      {/* Brushed stone/steel rim housing */}
       <mesh position={[0, 0.045, 0]} receiveShadow>
-        <cylinderGeometry args={[r, r * 1.08, 0.09, 24]} />
+        <cylinderGeometry args={[r, r * 1.08, 0.09, 20]} />
         <meshStandardMaterial color="#cbd5e1" roughness={0.42} metalness={0.35} />
       </mesh>
 
-      {/* Bright glowing wind-stream / sun core disc */}
+      {/* Luminous wind-stream core disc */}
       <mesh position={[0, 0.065, 0]}>
-        <cylinderGeometry args={[r * 0.74, r * 0.74, 0.08, 24]} />
+        <cylinderGeometry args={[r * 0.74, r * 0.74, 0.08, 20]} />
         <meshStandardMaterial
           color="#ffffff"
           emissive={pad.color}
@@ -197,7 +182,7 @@ function StylizedJumpPadMesh({ pad }: { pad: JumpPadDefinition }) {
 
       {/* Pulsing luminous outer ring */}
       <mesh ref={outerRingRef} position={[0, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[r * 0.88, 0.055, 8, 28]} />
+        <torusGeometry args={[r * 0.88, 0.055, 8, 24]} />
         <meshStandardMaterial
           color={pad.color}
           emissive={pad.color}
@@ -208,7 +193,7 @@ function StylizedJumpPadMesh({ pad }: { pad: JumpPadDefinition }) {
 
       {/* Rising animated wind-stream ring */}
       <mesh ref={pulseRingRef} position={[0, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[r * 0.78, 0.045, 8, 24]} />
+        <torusGeometry args={[r * 0.78, 0.045, 8, 20]} />
         <meshStandardMaterial
           ref={pulseMatRef}
           color="#ffffff"
@@ -255,14 +240,14 @@ export function StylizedArenaGeometry({ map }: StylizedArenaGeometryProps) {
     [map.theme.sunPosition],
   );
   const fillLightPos: [number, number, number] = [
-    -sunLightPos[0] * 0.6,
-    14,
-    -sunLightPos[2] * 0.6,
+    -sunLightPos[0] * 0.55,
+    16,
+    -sunLightPos[2] * 0.55,
   ];
 
   return (
     <group name={`stylized_arena_${map.id}`}>
-      {/* Procedural Daylight / Golden-Hour Sky Dome & Bright Atmospheric Fog */}
+      {/* Procedural Daylight / Golden-Hour Sky Dome & Exponential Atmospheric Fog */}
       <color attach="background" args={[map.theme.skyBottom]} />
       <Sky
         distance={450000}
@@ -272,12 +257,12 @@ export function StylizedArenaGeometry({ map }: StylizedArenaGeometryProps) {
         mieCoefficient={map.theme.mieCoefficient}
         mieDirectionalG={0.82}
       />
-      <fog
+      <fogExp2
         attach="fog"
-        args={[map.theme.fogColor, map.theme.fogNear, map.theme.fogFar]}
+        args={[map.theme.fogColor, map.theme.fogDensity ?? 0.0085]}
       />
 
-      {/* Warm Hemisphere Sky/Ground Bounce & Crisp Shadow-Casting Sunlight */}
+      {/* Cool Sky / Warm Ground Hemisphere Bounce & Warm Shadow-Casting Sunlight */}
       <hemisphereLight
         args={[
           map.theme.hemisphereSky,
@@ -290,39 +275,40 @@ export function StylizedArenaGeometry({ map }: StylizedArenaGeometryProps) {
         position={sunLightPos}
         color={map.theme.sunColor}
         intensity={map.theme.sunIntensity}
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
-        shadow-normalBias={0.03}
-        shadow-camera-left={-26}
-        shadow-camera-right={26}
-        shadow-camera-top={26}
-        shadow-camera-bottom={-26}
-        shadow-camera-near={1}
+        shadow-normalBias={0.035}
+        shadow-camera-left={-34}
+        shadow-camera-right={34}
+        shadow-camera-top={34}
+        shadow-camera-bottom={-34}
+        shadow-camera-near={2}
         shadow-camera-far={95}
       />
       <directionalLight
         position={fillLightPos}
         color={map.theme.hemisphereSky}
-        intensity={0.32}
+        intensity={0.34}
       />
 
-      {/* Procedural PBR-Textured Architectural Blocks */}
+      {/* Procedural PBR-Textured Multi-Part Architectural Blocks */}
       {map.blocks.map((block) => (
         <StylizedBlockMesh
           key={block.id}
           block={block}
           floorMaterial={map.theme.floorMaterial}
           accentColor={map.theme.accentColor}
+          preset={map.theme.decorPreset}
         />
       ))}
 
-      {/* Non-Colliding Perimeter & Atmospheric Decorations */}
+      {/* Non-Colliding Architectural Alcoves, Roofs, Pergolas, Banners & Foliage */}
       <ArenaDecorations
         preset={map.theme.decorPreset}
         halfSize={map.halfSize}
       />
 
-      {/* Bright Animated Jump Pads */}
+      {/* Animated Jump Pads */}
       {map.jumpPads.map((pad) => (
         <StylizedJumpPadMesh key={pad.id} pad={pad} />
       ))}

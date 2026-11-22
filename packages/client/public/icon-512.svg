@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg512" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <radialGradient id="sun512" cx="0.5" cy="0.34" r="0.48">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.95" />
+      <stop offset="55%" stop-color="#f59e0b" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="visor512" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#7dd3fc" />
+      <stop offset="100%" stop-color="#fbbf24" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="106" fill="url(#bg512)" />
+  <circle cx="256" cy="186" r="204" fill="url(#sun512)" />
+  <circle cx="256" cy="172" r="112" fill="#fbbf24" opacity="0.22" />
+  <rect x="246" y="54" width="20" height="62" rx="10" fill="#38bdf8" />
+  <circle cx="256" cy="54" r="18" fill="#fbbf24" />
+  <polygon points="128,156 176,112 336,112 384,156 394,342 330,396 182,396 118,342" fill="#e2e8f0" stroke="#38bdf8" stroke-width="10" />
+  <polygon points="148,170 364,170 374,332 320,374 192,374 138,332" fill="#334155" />
+  <rect x="90" y="214" width="32" height="96" rx="12" fill="#0284c7" />
+  <rect x="390" y="214" width="32" height="96" rx="12" fill="#0284c7" />
+  <rect x="144" y="202" width="224" height="80" rx="26" fill="#0f172a" stroke="#38bdf8" stroke-width="8" />
+  <rect x="162" y="220" width="188" height="44" rx="16" fill="url(#visor512)" />
+  <rect x="176" y="228" width="70" height="10" rx="5" fill="#ffffff" opacity="0.7" />
+  <rect x="196" y="314" width="120" height="26" rx="13" fill="#64748b" />
+</svg>

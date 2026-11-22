@@ -21,6 +21,7 @@ import {
   type JumpPadDefinition,
   type PlayerComputedStats,
   type PlayerMovementState,
+  type Vec3,
 } from "@upgun/shared";
 import type { SyncedPlayerSnapshot } from "./worldRuntime";
 
@@ -188,6 +189,33 @@ export class LocalPlayerPhysics {
         this.world.propagateModifiedBodyPositionsToColliders();
       }
     }
+  }
+
+  hasLineOfSight(from: Vec3, to: Vec3): boolean {
+    if (!this.rapier || !this.world || !this.collider) {
+      return true;
+    }
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dz = to.z - from.z;
+    const dist = Math.hypot(dx, dy, dz);
+    if (!Number.isFinite(dist) || dist <= 0.25) {
+      return true;
+    }
+    const inv = 1 / dist;
+    const ray = new this.rapier.Ray(
+      { x: from.x, y: from.y, z: from.z },
+      { x: dx * inv, y: dy * inv, z: dz * inv },
+    );
+    const hit = this.world.castRay(
+      ray,
+      Math.max(0.05, dist - 0.15),
+      true,
+      undefined,
+      undefined,
+      this.collider,
+    );
+    return hit === null;
   }
 
   dispose(): void {

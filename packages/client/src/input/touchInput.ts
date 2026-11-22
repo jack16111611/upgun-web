@@ -44,13 +44,13 @@ export class TouchInputController {
   private aimDragging = false;
   private recentActivity = false;
 
-  private readonly actions: Record<TouchActionName, boolean> = {
-    fire: false,
-    jump: false,
-    dash: false,
-    grenade: false,
-    reload: false,
-    melee: false,
+  private readonly actionSources: Record<TouchActionName, Set<string>> = {
+    fire: new Set(),
+    jump: new Set(),
+    dash: new Set(),
+    grenade: new Set(),
+    reload: new Set(),
+    melee: new Set(),
   };
 
   setMove(x: number, z: number): void {
@@ -74,18 +74,32 @@ export class TouchInputController {
     }
   }
 
-  addLookDelta(dx: number, dy: number): void {
-    const sens = useSettingsStore.getState().mouseSensitivity * TOUCH_LOOK_SENSITIVITY;
+  addLookDelta(dx: number, dy: number, sensitivityScale = 1): void {
+    const sens =
+      useSettingsStore.getState().mouseSensitivity *
+      TOUCH_LOOK_SENSITIVITY *
+      sensitivityScale;
     this.deltaYaw -= dx * sens;
     this.deltaPitch -= dy * sens;
     this.recentActivity = true;
   }
 
   setAction(action: TouchActionName, pressed: boolean): void {
-    this.actions[action] = pressed;
+    this.setActionSource(action, "default", pressed);
+  }
+
+  setActionSource(action: TouchActionName, sourceId: string, pressed: boolean): void {
+    const set = this.actionSources[action];
     if (pressed) {
+      set.add(sourceId);
       this.recentActivity = true;
+    } else {
+      set.delete(sourceId);
     }
+  }
+
+  private isActionPressed(action: TouchActionName): boolean {
+    return this.actionSources[action].size > 0;
   }
 
   reset(): void {
@@ -95,12 +109,12 @@ export class TouchInputController {
     this.deltaPitch = 0;
     this.aimDragging = false;
     this.recentActivity = false;
-    this.actions.fire = false;
-    this.actions.jump = false;
-    this.actions.dash = false;
-    this.actions.grenade = false;
-    this.actions.reload = false;
-    this.actions.melee = false;
+    this.actionSources.fire.clear();
+    this.actionSources.jump.clear();
+    this.actionSources.dash.clear();
+    this.actionSources.grenade.clear();
+    this.actionSources.reload.clear();
+    this.actionSources.melee.clear();
   }
 
   sample(): TouchSample {
@@ -109,13 +123,14 @@ export class TouchInputController {
     this.deltaYaw = 0;
     this.deltaPitch = 0;
 
-    const hasAction =
-      this.actions.fire ||
-      this.actions.jump ||
-      this.actions.dash ||
-      this.actions.grenade ||
-      this.actions.reload ||
-      this.actions.melee;
+    const fire = this.isActionPressed("fire");
+    const jump = this.isActionPressed("jump");
+    const dash = this.isActionPressed("dash");
+    const grenade = this.isActionPressed("grenade");
+    const reload = this.isActionPressed("reload");
+    const melee = this.isActionPressed("melee");
+
+    const hasAction = fire || jump || dash || grenade || reload || melee;
 
     const active =
       this.recentActivity ||
@@ -130,15 +145,15 @@ export class TouchInputController {
     return {
       moveX: this.moveX,
       moveZ: this.moveZ,
-      jump: this.actions.jump,
-      dash: this.actions.dash,
-      fire: this.actions.fire,
-      grenade: this.actions.grenade,
-      reload: this.actions.reload,
-      melee: this.actions.melee,
+      jump,
+      dash,
+      fire,
+      grenade,
+      reload,
+      melee,
       deltaYaw,
       deltaPitch,
-      isAiming: this.aimDragging || this.actions.fire,
+      isAiming: this.aimDragging || fire,
       active,
     };
   }

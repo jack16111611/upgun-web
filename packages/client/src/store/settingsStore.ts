@@ -14,6 +14,8 @@ import {
   type HatId,
 } from "@upgun/shared";
 import { soundEngine } from "../audio/soundEngine";
+import type { AimAssistPreset } from "../input/aimAssist";
+import { gyroInput } from "../input/gyroInput";
 
 const STORAGE_KEY = "upgun_settings_v1";
 
@@ -27,6 +29,13 @@ interface PersistedSettings {
   bodyColor: string;
   preferredGameMode: GameMode;
   preferredBotDifficulty: BotDifficulty;
+  aimAssistPreset: AimAssistPreset;
+  aimAssistCustomized: boolean;
+  autoFireEnabled: boolean;
+  gyroEnabled: boolean;
+  gyroSensitivityX: number;
+  gyroSensitivityY: number;
+  gyroInvertY: boolean;
 }
 
 function detectTouchCapability(): boolean {
@@ -52,17 +61,32 @@ function clampVolume(value: unknown): number {
   return Math.max(0, Math.min(1, Math.round(value * 100) / 100));
 }
 
+function sanitizeAimAssistPreset(value: unknown, fallback: AimAssistPreset): AimAssistPreset {
+  if (value === "off" || value === "standard" || value === "strong") {
+    return value;
+  }
+  return fallback;
+}
+
 function loadInitialSettings(): PersistedSettings {
+  const touchCapable = detectTouchCapability();
   const fallback: PersistedSettings = {
     nickname: defaultNickname(),
     mouseSensitivity: 1.0,
-    showTouchControls: detectTouchCapability(),
+    showTouchControls: touchCapable,
     audioVolume: 0.75,
     audioMuted: false,
     hatId: DEFAULT_HAT_ID,
     bodyColor: DEFAULT_BODY_COLOR,
     preferredGameMode: DEFAULT_GAME_MODE,
     preferredBotDifficulty: DEFAULT_BOT_DIFFICULTY,
+    aimAssistPreset: touchCapable ? "strong" : "off",
+    aimAssistCustomized: false,
+    autoFireEnabled: touchCapable,
+    gyroEnabled: false,
+    gyroSensitivityX: 1.0,
+    gyroSensitivityY: 1.0,
+    gyroInvertY: false,
   };
 
   if (typeof window === "undefined" || !window.localStorage) {
@@ -89,6 +113,17 @@ function loadInitialSettings(): PersistedSettings {
       bodyColor: sanitizeBodyColor(parsed.bodyColor),
       preferredGameMode: sanitizeGameMode(parsed.preferredGameMode),
       preferredBotDifficulty: sanitizeBotDifficulty(parsed.preferredBotDifficulty),
+      aimAssistPreset: sanitizeAimAssistPreset(parsed.aimAssistPreset, fallback.aimAssistPreset),
+      aimAssistCustomized:
+        typeof parsed.aimAssistCustomized === "boolean" ? parsed.aimAssistCustomized : false,
+      autoFireEnabled:
+        typeof parsed.autoFireEnabled === "boolean"
+          ? parsed.autoFireEnabled
+          : fallback.autoFireEnabled,
+      gyroEnabled: typeof parsed.gyroEnabled === "boolean" ? parsed.gyroEnabled : false,
+      gyroSensitivityX: clampSensitivity(parsed.gyroSensitivityX),
+      gyroSensitivityY: clampSensitivity(parsed.gyroSensitivityY),
+      gyroInvertY: typeof parsed.gyroInvertY === "boolean" ? parsed.gyroInvertY : false,
     };
   } catch {
     return fallback;
@@ -103,6 +138,15 @@ function persistSettings(next: PersistedSettings): void {
   }
 }
 
+function syncGyroConfig(state: Pick<PersistedSettings, "gyroEnabled" | "gyroSensitivityX" | "gyroSensitivityY" | "gyroInvertY">): void {
+  gyroInput.setConfig({
+    enabled: state.gyroEnabled,
+    sensitivityX: state.gyroSensitivityX,
+    sensitivityY: state.gyroSensitivityY,
+    invertY: state.gyroInvertY,
+  });
+}
+
 interface SettingsStoreState extends PersistedSettings {
   setNickname: (raw: string) => void;
   setMouseSensitivity: (val: number) => void;
@@ -113,12 +157,19 @@ interface SettingsStoreState extends PersistedSettings {
   setBodyColor: (bodyColor: string) => void;
   setPreferredGameMode: (mode: GameMode) => void;
   setPreferredBotDifficulty: (difficulty: BotDifficulty) => void;
+  setAimAssistPreset: (preset: AimAssistPreset, manual?: boolean) => void;
+  setAutoFireEnabled: (enabled: boolean) => void;
+  setGyroEnabled: (enabled: boolean) => void;
+  setGyroSensitivityX: (val: number) => void;
+  setGyroSensitivityY: (val: number) => void;
+  setGyroInvertY: (invert: boolean) => void;
 }
 
 const initial = loadInitialSettings();
 soundEngine.setVolume(initial.audioVolume);
 soundEngine.setMuted(initial.audioMuted);
 soundEngine.attachAutoUnlock();
+syncGyroConfig(initial);
 
 function snapshotFrom(state: SettingsStoreState): PersistedSettings {
   return {
@@ -131,6 +182,13 @@ function snapshotFrom(state: SettingsStoreState): PersistedSettings {
     bodyColor: state.bodyColor,
     preferredGameMode: state.preferredGameMode,
     preferredBotDifficulty: state.preferredBotDifficulty,
+    aimAssistPreset: state.aimAssistPreset,
+    aimAssistCustomized: state.aimAssistCustomized,
+    autoFireEnabled: state.autoFireEnabled,
+    gyroEnabled: state.gyroEnabled,
+    gyroSensitivityX: state.gyroSensitivityX,
+    gyroSensitivityY: state.gyroSensitivityY,
+    gyroInvertY: state.gyroInvertY,
   };
 }
 
@@ -139,7 +197,10 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   setNickname: (raw) => {
     const nickname = raw.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16);
     set({ nickname });
-    persistSettings({ ...snapshotFrom(get()), nickname: sanitizeDisplayName(nickname, initial.nickname) });
+    persistSettings({
+      ...snapshotFrom(get()),
+      nickname: sanitizeDisplayName(nickname, initial.nickname),
+    });
   },
   setMouseSensitivity: (val) => {
     const mouseSensitivity = clampSensitivity(val);
@@ -180,5 +241,41 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     const preferredBotDifficulty = sanitizeBotDifficulty(rawDiff);
     set({ preferredBotDifficulty });
     persistSettings({ ...snapshotFrom(get()), preferredBotDifficulty });
+  },
+  setAimAssistPreset: (rawPreset, manual = true) => {
+    const aimAssistPreset = sanitizeAimAssistPreset(rawPreset, "standard");
+    const aimAssistCustomized = manual ? true : get().aimAssistCustomized;
+    set({ aimAssistPreset, aimAssistCustomized });
+    persistSettings({ ...snapshotFrom(get()), aimAssistPreset, aimAssistCustomized });
+  },
+  setAutoFireEnabled: (autoFireEnabled) => {
+    set({ autoFireEnabled });
+    persistSettings({ ...snapshotFrom(get()), autoFireEnabled });
+  },
+  setGyroEnabled: (gyroEnabled) => {
+    set({ gyroEnabled });
+    const snap = { ...snapshotFrom(get()), gyroEnabled };
+    syncGyroConfig(snap);
+    persistSettings(snap);
+  },
+  setGyroSensitivityX: (val) => {
+    const gyroSensitivityX = clampSensitivity(val);
+    set({ gyroSensitivityX });
+    const snap = { ...snapshotFrom(get()), gyroSensitivityX };
+    syncGyroConfig(snap);
+    persistSettings(snap);
+  },
+  setGyroSensitivityY: (val) => {
+    const gyroSensitivityY = clampSensitivity(val);
+    set({ gyroSensitivityY });
+    const snap = { ...snapshotFrom(get()), gyroSensitivityY };
+    syncGyroConfig(snap);
+    persistSettings(snap);
+  },
+  setGyroInvertY: (gyroInvertY) => {
+    set({ gyroInvertY });
+    const snap = { ...snapshotFrom(get()), gyroInvertY };
+    syncGyroConfig(snap);
+    persistSettings(snap);
   },
 }));

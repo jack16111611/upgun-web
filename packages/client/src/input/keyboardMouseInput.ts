@@ -1,4 +1,5 @@
 import { commsStore } from "../components/comms";
+import { hudLayoutStore } from "../components/mobile";
 import { useGameStore } from "../store/gameStore";
 import { useSettingsStore } from "../store/settingsStore";
 
@@ -52,6 +53,7 @@ export class KeyboardMouseInput {
       game.lobbyOpen ||
       game.settingsOpen ||
       game.sandboxOpen ||
+      hudLayoutStore.getState().editorOpen ||
       comms.chatInputOpen ||
       comms.quickChatOpen ||
       game.phase === "drafting" ||
@@ -84,6 +86,7 @@ export class KeyboardMouseInput {
       !game.lobbyOpen &&
       !game.settingsOpen &&
       !game.sandboxOpen &&
+      !hudLayoutStore.getState().editorOpen &&
       !comms.chatInputOpen &&
       !comms.quickChatOpen &&
       game.phase !== "drafting" &&

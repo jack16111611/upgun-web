@@ -1,14 +1,26 @@
+/* Prevent mobile pull-to-refresh, rubber-band bounce, and accidental zoom/selection */
+html,
+body,
+#root,
+.viewport {
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .touch-layer {
   position: fixed;
   inset: 0;
   z-index: 11;
   pointer-events: none;
   user-select: none;
+  touch-action: none;
 }
 
 .touch-zone {
   position: fixed;
-  top: 72px;
+  top: 64px;
   bottom: 0;
   pointer-events: auto;
   touch-action: none;
@@ -24,126 +36,201 @@
   width: 54%;
 }
 
-/* Virtual Joystick */
+/* Floating Virtual Thumbstick */
 .joystick-base {
-  width: 116px;
-  height: 116px;
-  border-radius: 50%;
-  border: 2px solid rgba(248, 250, 252, 0.32);
-  background-color: rgba(15, 23, 42, 0.36);
-  pointer-events: none;
-}
-
-.joystick-base--floating {
   position: fixed;
   transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(248, 250, 252, 0.36);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(15, 23, 42, 0.2),
+    rgba(15, 23, 42, 0.48)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
-.joystick-base--idle {
-  position: absolute;
-  left: max(26px, env(safe-area-inset-left, 0px));
-  bottom: max(26px, env(safe-area-inset-bottom, 0px));
-  opacity: 0.72;
+.joystick-base--sprint {
+  border-color: rgba(52, 211, 153, 0.9);
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.42);
 }
 
 .joystick-knob {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 48px;
-  height: 48px;
+  width: 44%;
+  height: 44%;
   border-radius: 50%;
-  background-color: rgba(56, 189, 248, 0.82);
-  border: 2px solid #e0f2fe;
-  box-shadow: 0 2px 10px rgba(2, 6, 23, 0.55);
+  background: radial-gradient(circle at 35% 35%, #7dd3fc, #0284c7);
+  border: 2px solid rgba(224, 242, 254, 0.95);
+  box-shadow: 0 4px 14px rgba(2, 6, 23, 0.55);
 }
 
 .joystick-knob--idle {
   transform: translate(-50%, -50%);
 }
 
-/* Right-side Thumb Action Cluster */
-.touch-actions {
+.joystick-sprint-lock {
   position: absolute;
-  right: max(18px, env(safe-area-inset-right, 0px));
-  bottom: max(18px, env(safe-area-inset-bottom, 0px));
-  width: 210px;
-  height: 196px;
-  pointer-events: none;
+  left: 50%;
+  top: -36px;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(52, 211, 153, 0.72);
+  background: rgba(6, 78, 59, 0.78);
+  color: #a7f3d0;
+  transition: transform 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
 }
 
+.joystick-sprint-lock--armed {
+  transform: translateX(-50%) scale(1.18);
+  border-color: #34d399;
+  background: rgba(16, 185, 129, 0.92);
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.75);
+}
+
+.touch-autosprint-pill {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 13;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #34d399;
+  background: rgba(6, 95, 70, 0.88);
+  color: #ecfdf5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.58);
+  cursor: pointer;
+}
+
+/* Circular Frosted-Glass Combat Icon Buttons (Zero Text Labels) */
 .touch-btn {
-  position: absolute;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  z-index: 12;
   pointer-events: auto;
   touch-action: none;
   border-radius: 50%;
-  border: 2px solid rgba(248, 250, 252, 0.45);
-  background-color: rgba(15, 23, 42, 0.72);
+  border: 2px solid rgba(248, 250, 252, 0.48);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(51, 65, 85, 0.62),
+    rgba(15, 23, 42, 0.76)
+  );
   color: #f8fafc;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  min-inline-size: 48px;
-  min-block-size: 48px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 6px 18px rgba(2, 6, 23, 0.48),
+    inset 0 1px 1px rgba(255, 255, 255, 0.24);
+  transition: transform 0.08s ease, border-color 0.1s ease, box-shadow 0.1s ease;
 }
 
 .touch-btn--pressed {
-  transform: scale(0.93);
-  border-color: #38bdf8;
-  background-color: rgba(2, 132, 199, 0.75);
+  transform: translate(-50%, -50%) scale(0.92);
+  border-color: #7dd3fc;
+  box-shadow:
+    0 0 20px rgba(56, 189, 248, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.38);
 }
 
-.touch-btn-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-}
-
-.touch-btn-sub {
-  font-size: 0.65rem;
-  color: #facc15;
+.touch-btn--cooldown {
+  filter: saturate(0.65);
 }
 
 .touch-btn--fire {
-  right: 8px;
-  bottom: 8px;
-  width: 74px;
-  height: 74px;
-  border-color: #f87171;
-  background-color: rgba(185, 28, 28, 0.68);
+  border-color: rgba(248, 113, 113, 0.88);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(239, 68, 68, 0.72),
+    rgba(153, 27, 27, 0.82)
+  );
+  box-shadow:
+    0 8px 24px rgba(153, 27, 27, 0.48),
+    inset 0 1px 2px rgba(254, 202, 202, 0.35);
+}
+
+.touch-btn--fire.touch-btn--pressed {
+  border-color: #fecaca;
+  box-shadow: 0 0 26px rgba(248, 113, 113, 0.78);
+}
+
+.touch-btn--claw {
+  border-color: rgba(251, 146, 60, 0.86);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(234, 88, 12, 0.62),
+    rgba(124, 45, 18, 0.78)
+  );
 }
 
 .touch-btn--jump {
-  right: 98px;
-  bottom: 12px;
-  width: 58px;
-  height: 58px;
+  border-color: rgba(248, 250, 252, 0.62);
 }
 
 .touch-btn--dash {
-  right: 14px;
-  bottom: 98px;
-  width: 58px;
-  height: 58px;
-  border-color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.82);
+  color: #bae6fd;
 }
 
 .touch-btn--grenade {
-  right: 88px;
-  bottom: 84px;
-  width: 56px;
-  height: 56px;
-  border-color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.82);
+  color: #fed7aa;
+}
+
+.touch-btn--melee {
+  border-color: rgba(192, 132, 252, 0.82);
+  color: #e9d5ff;
 }
 
 .touch-btn--reload {
-  right: 156px;
-  bottom: 44px;
-  width: 50px;
-  height: 50px;
+  border-color: rgba(148, 163, 184, 0.65);
+  color: #e2e8f0;
+}
+
+.touch-btn--quickchat {
+  border-color: rgba(52, 211, 153, 0.72);
+  color: #a7f3d0;
+}
+
+.touch-btn-ring {
+  position: absolute;
+  inset: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  pointer-events: none;
+}
+
+.touch-btn-icon--spin {
+  animation: upgun-reload-spin 0.85s linear infinite;
+}
+
+@keyframes upgun-reload-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Keep HP & Ammo cards clear of joystick & action buttons when touch controls are visible */
@@ -163,30 +250,6 @@
 .hud-layer--touch .hud-card--ammo {
   min-width: 112px;
   padding: 6px 10px;
-}
-
-/* Portrait orientation advisory banner */
-.rotate-banner {
-  display: none;
-}
-
-@media (orientation: portrait) {
-  .rotate-banner {
-    position: fixed;
-    top: 56px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 20;
-    display: block;
-    padding: 6px 14px;
-    border-radius: 9999px;
-    background-color: rgba(113, 63, 18, 0.94);
-    border: 1px solid #eab308;
-    color: #fef9c3;
-    font-size: 0.76rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
 }
 
 @media (pointer: coarse) {

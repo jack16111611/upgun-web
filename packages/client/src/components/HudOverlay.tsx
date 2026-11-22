@@ -19,10 +19,17 @@ import { useSettingsStore } from "../store/settingsStore";
 import { CardDraftOverlay } from "./CardDraftOverlay";
 import { commsStore, QuickChatWheel, TextChatBox, voiceChatManager } from "./comms";
 import { ConnectionBadge } from "./ConnectionBadge";
+import { DamageDirectionArcs } from "./DamageDirectionArcs";
 import { HudCombatBar } from "./HudCombatBar";
 import { HudModeBanner, HudVoiceToolbar, toggleVoiceConnection } from "./HudModeBanner";
 import { LobbyOverlay } from "./LobbyOverlay";
 import { KillstreakBanner, MatchVictoryOverlay } from "./match";
+import {
+  FullscreenButton,
+  HudLayoutEditor,
+  LandscapeGuardOverlay,
+  useHudLayoutStore,
+} from "./mobile";
 import { MyCardsDrawer } from "./MyCardsDrawer";
 import { SandboxDrawer, useCheatCodeListener } from "./sandbox";
 import { ScoreboardOverlay } from "./ScoreboardOverlay";
@@ -67,9 +74,13 @@ export function HudOverlay() {
   const toggleSandbox = useGameStore((s) => s.toggleSandbox);
 
   const showTouchControls = useSettingsStore((s) => s.showTouchControls);
+  const autoFireEnabled = useSettingsStore((s) => s.autoFireEnabled);
+  const setAutoFireEnabled = useSettingsStore((s) => s.setAutoFireEnabled);
+  const editorOpen = useHudLayoutStore((s) => s.editorOpen);
+  const setEditorOpen = useHudLayoutStore((s) => s.setEditorOpen);
   const [hitmarkerActive, setHitmarkerActive] = useState(false);
 
-  useCheatCodeListener(cheatsEnabled && status === "connected", sendCheatCommand);
+  useCheatCodeListener(cheatsEnabled && status === "connected" && !editorOpen, sendCheatCommand);
 
   useEffect(() => {
     const remaining = hitmarkerUntil - performance.now();
@@ -87,6 +98,7 @@ export function HudOverlay() {
     !lobbyOpen &&
     !settingsOpen &&
     !sandboxOpen &&
+    !editorOpen &&
     phase !== "drafting" &&
     phase !== "match_over";
   const isAliveInArena = inArena && isAlive;
@@ -115,50 +127,74 @@ export function HudOverlay() {
 
   return (
     <div className={`hud-layer ${showTouchControls ? "hud-layer--touch" : ""}`}>
-      <ConnectionBadge />
-      <KillstreakBanner />
+      {!editorOpen && <ConnectionBadge />}
+      {!editorOpen && <KillstreakBanner />}
 
       {/* Top-Right Toolbar */}
-      <div className="hud-top-right">
-        {status === "connected" && <HudVoiceToolbar />}
-        {status === "connected" && cheatsEnabled && (
+      {!editorOpen && (
+        <div className="hud-top-right">
+          {inArena && (
+            <button
+              type="button"
+              className={`hud-top-btn hud-autofire-btn ${autoFireEnabled ? "hud-top-btn--active" : ""}`}
+              aria-pressed={autoFireEnabled}
+              title={autoFireEnabled ? "Auto-Fire ON (click to disable)" : "Auto-Fire OFF (click to enable)"}
+              onClick={() => setAutoFireEnabled(!autoFireEnabled)}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="hud-autofire-icon">
+                <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path
+                  d="M12 2v4M12 18v4M2 12h4M18 12h4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+              </svg>
+              <span>AUTO</span>
+            </button>
+          )}
+          {status === "connected" && <HudVoiceToolbar />}
+          {status === "connected" && cheatsEnabled && (
+            <button
+              type="button"
+              className={`hud-top-btn ${sandboxOpen ? "hud-top-btn--active" : ""}`}
+              aria-expanded={sandboxOpen}
+              onClick={() => toggleSandbox()}
+            >
+              Sandbox / Cheats
+            </button>
+          )}
+          {status === "connected" && (
+            <button
+              type="button"
+              className={`hud-top-btn ${cardsDrawerOpen ? "hud-top-btn--active" : ""}`}
+              aria-expanded={cardsDrawerOpen}
+              onClick={() => toggleCardsDrawer()}
+            >
+              My Cards ({ownedCards.length})
+            </button>
+          )}
           <button
             type="button"
-            className={`hud-top-btn ${sandboxOpen ? "hud-top-btn--active" : ""}`}
-            aria-expanded={sandboxOpen}
-            onClick={() => toggleSandbox()}
+            className="hud-top-btn"
+            onClick={() => {
+              setSettingsOpen(false);
+              setSandboxOpen(false);
+              setLobbyOpen(true);
+            }}
           >
-            Sandbox / Cheats
+            Menu
           </button>
-        )}
-        {status === "connected" && (
-          <button
-            type="button"
-            className={`hud-top-btn ${cardsDrawerOpen ? "hud-top-btn--active" : ""}`}
-            aria-expanded={cardsDrawerOpen}
-            onClick={() => toggleCardsDrawer()}
-          >
-            My Cards ({ownedCards.length})
+          <button type="button" className="hud-top-btn" onClick={() => setSettingsOpen(true)}>
+            Settings
           </button>
-        )}
-        <button
-          type="button"
-          className="hud-top-btn"
-          onClick={() => {
-            setSettingsOpen(false);
-            setSandboxOpen(false);
-            setLobbyOpen(true);
-          }}
-        >
-          Menu
-        </button>
-        <button type="button" className="hud-top-btn" onClick={() => setSettingsOpen(true)}>
-          Settings
-        </button>
-      </div>
+          <FullscreenButton className="hud-top-btn" />
+        </div>
+      )}
 
       {/* Top-Center Round / Phase Banner */}
-      {status === "connected" && phase !== "drafting" && phase !== "match_over" && (
+      {status === "connected" && !editorOpen && phase !== "drafting" && phase !== "match_over" && (
         <section className="hud-top-center" aria-label="Match status">
           <div className="hud-phase-pill">
             <span className="hud-phase-title">{phaseHeading}</span>
@@ -186,18 +222,21 @@ export function HudOverlay() {
         </section>
       )}
 
-      {/* Center Crosshair */}
+      {/* Center Crosshair & Directional Damage Arcs */}
       {isAliveInArena && (
-        <div
-          aria-hidden="true"
-          className={`crosshair ${hitmarkerActive ? "crosshair--hit" : ""} ${hitmarkerActive && hitmarkerKill ? "crosshair--kill" : ""}`}
-        >
-          <span className="crosshair-line crosshair-line--top" />
-          <span className="crosshair-line crosshair-line--bottom" />
-          <span className="crosshair-line crosshair-line--left" />
-          <span className="crosshair-line crosshair-line--right" />
-          <span className="crosshair-dot" />
-        </div>
+        <>
+          <div
+            aria-hidden="true"
+            className={`crosshair ${hitmarkerActive ? "crosshair--hit" : ""} ${hitmarkerActive && hitmarkerKill ? "crosshair--kill" : ""}`}
+          >
+            <span className="crosshair-line crosshair-line--top" />
+            <span className="crosshair-line crosshair-line--bottom" />
+            <span className="crosshair-line crosshair-line--left" />
+            <span className="crosshair-line crosshair-line--right" />
+            <span className="crosshair-dot" />
+          </div>
+          <DamageDirectionArcs />
+        </>
       )}
 
       {isAliveInArena && !isPointerLocked && !showTouchControls && (
@@ -210,23 +249,24 @@ export function HudOverlay() {
 
       <QuickChatWheel
         enabled={inArena}
-        showTouchButton={showTouchControls}
+        showTouchButton={false}
         onSelectCallout={sendQuickChat}
       />
       <TextChatBox
-        enabled={status === "connected" && !lobbyOpen && !settingsOpen && !sandboxOpen}
+        enabled={status === "connected" && !lobbyOpen && !settingsOpen && !sandboxOpen && !editorOpen}
         showTouchControls={showTouchControls}
         onSendChat={sendChatMessage}
         onToggleMic={() => void toggleVoiceConnection()}
         onToggleMute={() => voiceChatManager.setMuted(!voiceChatManager.isMuted())}
         onTogglePtt={() => voiceChatManager.setPushToTalkMode(!commsStore.getState().pttEnabled)}
       />
-      <SpectatorOverlay />
+      {!editorOpen && <SpectatorOverlay />}
       <TouchControls />
+      <HudLayoutEditor />
       <MyCardsDrawer />
       <SandboxDrawer
         cheatsEnabled={cheatsEnabled}
-        isOpen={sandboxOpen}
+        isOpen={sandboxOpen && !editorOpen}
         onClose={() => setSandboxOpen(false)}
         godMode={godMode}
         infiniteMode={infiniteMode}
@@ -240,7 +280,7 @@ export function HudOverlay() {
       />
       <CardDraftOverlay />
       <MatchVictoryOverlay
-        visible={status === "connected" && phase === "match_over" && !lobbyOpen}
+        visible={status === "connected" && phase === "match_over" && !lobbyOpen && !editorOpen}
         champion={champion}
         standings={matchStandings}
         nextMapName={nextMap.name}
@@ -248,8 +288,15 @@ export function HudOverlay() {
         onReturnLobby={() => setLobbyOpen(true)}
       />
       <ScoreboardOverlay />
-      <LobbyOverlay />
+      <LobbyOverlay
+        headerExtra={<FullscreenButton className="btn btn--secondary" />}
+        onCustomizeControls={() => {
+          setLobbyOpen(false);
+          setEditorOpen(true);
+        }}
+      />
       <SettingsDrawer />
+      <LandscapeGuardOverlay />
     </div>
   );
 }

@@ -27,6 +27,7 @@ export interface ArenaTheme {
   fogColor: string;
   fogNear: number;
   fogFar: number;
+  fogDensity?: number;
   ambientIntensity: number;
   sunColor: string;
   sunIntensity: number;

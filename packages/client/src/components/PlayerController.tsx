@@ -2,14 +2,15 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { FIXED_DT_SEC, getGameModeConfig, PLAYER_EYE_OFFSET_Y } from "@upgun/shared";
 import { soundEngine } from "../audio/soundEngine";
-import { useCommsStore } from "./comms";
 import { juiceBus } from "../effects";
 import { LocalPlayerPhysics } from "../game/localPhysics";
 import { worldRuntime } from "../game/worldRuntime";
+import type { AimAssistCandidate } from "../input/aimAssist";
 import { InputManager } from "../input/inputManager";
-import type { AimAssistTarget } from "../input/touchInput";
 import { sendInputFrame } from "../network/colyseusClient";
 import { useGameStore } from "../store/gameStore";
+import { useCommsStore } from "./comms";
+import { useHudLayoutStore } from "./mobile";
 
 const MAX_SUBSTEPS_PER_FRAME = 5;
 
@@ -25,6 +26,7 @@ export function PlayerController() {
   const phase = useGameStore((s) => s.phase);
   const chatInputOpen = useCommsStore((s) => s.chatInputOpen);
   const quickChatOpen = useCommsStore((s) => s.quickChatOpen);
+  const editorOpen = useHudLayoutStore((s) => s.editorOpen);
 
   useEffect(() => {
     const input = new InputManager();
@@ -56,6 +58,7 @@ export function PlayerController() {
       lobbyOpen ||
       settingsOpen ||
       sandboxOpen ||
+      editorOpen ||
       chatInputOpen ||
       quickChatOpen ||
       phase === "drafting" ||
@@ -64,7 +67,7 @@ export function PlayerController() {
       inputRef.current?.exitPointerLock();
       inputRef.current?.resetTransientTouch();
     }
-  }, [lobbyOpen, settingsOpen, sandboxOpen, chatInputOpen, quickChatOpen, phase]);
+  }, [lobbyOpen, settingsOpen, sandboxOpen, editorOpen, chatInputOpen, quickChatOpen, phase]);
 
   useFrame((_, delta) => {
     const input = inputRef.current;
@@ -93,10 +96,10 @@ export function PlayerController() {
       worldRuntime.needsSpawnSnap = false;
     }
 
-    const enemyTargets: AimAssistTarget[] = [];
+    const enemyTargets: AimAssistCandidate[] = [];
     for (const [id, player] of worldRuntime.players) {
       if (id !== localId && player.isAlive) {
-        enemyTargets.push({ x: player.x, y: player.y, z: player.z });
+        enemyTargets.push({ id, x: player.x, y: player.y, z: player.z });
       }
     }
 
@@ -104,17 +107,22 @@ export function PlayerController() {
     accumulatorRef.current += clampedDelta;
 
     const isAlive = localSnap ? localSnap.isAlive : true;
+    const gameStoreState = useGameStore.getState();
     const allowMovement =
       worldRuntime.room !== null &&
+      !gameStoreState.lobbyOpen &&
       worldRuntime.phase !== "countdown" &&
       worldRuntime.phase !== "drafting" &&
       worldRuntime.phase !== "match_over" &&
       isAlive;
-    const gameStoreState = useGameStore.getState();
     const modeCfg = getGameModeConfig(gameStoreState.gameMode);
     const gravityMultiplier =
       (gameStoreState.moonGravity ? 0.35 : 1) * modeCfg.gravityMultiplier;
     const infiniteCooldowns = gameStoreState.infiniteMode;
+    const hasLineOfSight = physics.isReady
+      ? (from: { x: number; y: number; z: number }, to: { x: number; y: number; z: number }) =>
+          physics.hasLineOfSight(from, to)
+      : undefined;
 
     let steps = 0;
     while (accumulatorRef.current >= FIXED_DT_SEC && steps < MAX_SUBSTEPS_PER_FRAME) {
@@ -124,7 +132,7 @@ export function PlayerController() {
         y: physics.state.y + PLAYER_EYE_OFFSET_Y,
         z: physics.state.z,
       };
-      const frame = input.sampleInputFrame(eyePos, FIXED_DT_SEC, enemyTargets);
+      const frame = input.sampleInputFrame(eyePos, FIXED_DT_SEC, enemyTargets, hasLineOfSight);
 
       if (worldRuntime.room) {
         sendInputFrame(frame);
@@ -158,17 +166,19 @@ export function PlayerController() {
 
     const pos = physics.state;
     const { yaw, pitch } = input.getLookAngles();
+    const isLobbyShowcase = !worldRuntime.room || gameStoreState.lobbyOpen;
     const isSpectating =
       worldRuntime.room !== null &&
+      !gameStoreState.lobbyOpen &&
       !isAlive &&
       worldRuntime.phase !== "lobby" &&
       worldRuntime.phase !== "match_over";
 
-    if (!worldRuntime.room) {
-      // Gentle lobby orbit preview around the stylized sunlit arena
-      const t = performance.now() * 0.00018;
-      camera.position.set(Math.sin(t) * 20, 10, Math.cos(t) * 20);
-      camera.lookAt(0, 1.5, 0);
+    if (isLobbyShowcase) {
+      // Heroic sunlit camera framing the central LobbyHeroPedestal to the right of the glass sidebar
+      const t = performance.now() * 0.00025;
+      camera.position.set(0.35 + Math.sin(t) * 0.55, 2.38 + Math.cos(t * 0.7) * 0.12, 5.55);
+      camera.lookAt(-1.15, 1.65, 0);
     } else if (isAlive) {
       camera.position.set(pos.x, pos.y + PLAYER_EYE_OFFSET_Y, pos.z);
       camera.rotation.order = "YXZ";

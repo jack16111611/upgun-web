@@ -1,0 +1,405 @@
+/* iOS Safari Immersive Mode */
+html.ios-immersive-mode,
+html.ios-immersive-mode body,
+html.ios-immersive-mode #root,
+html.ios-immersive-mode .viewport {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+/* Fullscreen Icon Button */
+.mobile-fs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-inline-size: 40px;
+  min-block-size: 38px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.mobile-fs-btn:hover {
+  border-color: rgba(56, 189, 248, 0.8);
+  background: rgba(30, 41, 59, 0.88);
+}
+
+.mobile-fs-btn:active {
+  transform: scale(0.95);
+}
+
+.mobile-fs-btn--active {
+  border-color: rgba(56, 189, 248, 0.9);
+  background: rgba(14, 116, 144, 0.65);
+  color: #e0f2fe;
+}
+
+/* iOS Share -> Add to Home Screen Modal Card */
+.ios-a2hs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.68);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.ios-a2hs-card {
+  width: min(360px, 100%);
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: linear-gradient(155deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94));
+  box-shadow: 0 22px 48px rgba(2, 6, 23, 0.65);
+  color: #f8fafc;
+}
+
+.ios-a2hs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ios-a2hs-badge {
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  color: #7dd3fc;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.ios-a2hs-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.7);
+  color: #cbd5e1;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ios-a2hs-title {
+  font-size: 1.04rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.ios-a2hs-sub {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.ios-a2hs-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ios-a2hs-steps li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  font-size: 0.83rem;
+  color: #e2e8f0;
+}
+
+.ios-a2hs-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.ios-a2hs-done {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 11px;
+  border: none;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Portrait -> Landscape Guard Overlay */
+.landscape-guard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 38%, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.97));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: auto;
+}
+
+.landscape-guard-card {
+  width: min(320px, 100%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 26px 22px;
+  border-radius: 22px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.84);
+  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.72);
+}
+
+.landscape-guard-phone {
+  color: #f8fafc;
+  animation: upgun-rotate-phone 2.2s ease-in-out infinite;
+}
+
+@keyframes upgun-rotate-phone {
+  0%,
+  18% {
+    transform: rotate(0deg);
+  }
+  48%,
+  72% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.landscape-guard-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.01em;
+}
+
+.landscape-guard-desc {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.landscape-guard-dismiss {
+  margin-top: 6px;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Live Drag-and-Drop HUD Customizer */
+.hud-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  background: rgba(2, 6, 23, 0.34);
+}
+
+.hud-editor-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.hud-editor-dock {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  width: min(640px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hud-editor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hud-editor-presets,
+.hud-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-editor-pill {
+  padding: 6px 11px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(30, 41, 59, 0.72);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hud-editor-pill--active {
+  border-color: #38bdf8;
+  background: rgba(14, 165, 233, 0.25);
+  color: #e0f2fe;
+}
+
+.hud-editor-btn {
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hud-editor-btn--ghost {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(30, 41, 59, 0.7);
+  color: #e2e8f0;
+}
+
+.hud-editor-btn--primary {
+  border: none;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+}
+
+.hud-editor-tune {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.hud-editor-selected-tag {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #7dd3fc;
+  font-size: 0.74rem;
+  font-weight: 800;
+  min-width: 96px;
+  text-align: center;
+}
+
+.hud-editor-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  flex: 1;
+  min-width: 150px;
+}
+
+.hud-editor-slider input[type="range"] {
+  flex: 1;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+.hud-editor-handle {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(248, 250, 252, 0.55);
+  background: rgba(15, 23, 42, 0.62);
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.45);
+}
+
+.hud-editor-handle:active {
+  cursor: grabbing;
+}
+
+.hud-editor-handle--selected {
+  border-color: #38bdf8;
+  box-shadow:
+    0 0 0 4px rgba(56, 189, 248, 0.32),
+    0 8px 24px rgba(2, 6, 23, 0.55);
+  z-index: 68;
+}
+
+.hud-editor-handle-tag {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}

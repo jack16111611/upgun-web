@@ -3,6 +3,15 @@ import { DRAFTING_DURATION_SEC, getCardDefinition } from "@upgun/shared";
 import { soundEngine } from "../audio/soundEngine";
 import { sendPickCard, sendRerollDraft } from "../network/colyseusClient";
 import { useGameStore } from "../store/gameStore";
+import { CardCategoryIcon } from "./CardCategoryIcon";
+
+function parseStatBadges(summary: string): string[] {
+  const parts = summary
+    .split(/\s*[•|,]\s*/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  return parts.length > 0 ? parts : [summary];
+}
 
 export function CardDraftOverlay() {
   const status = useGameStore((s) => s.status);
@@ -122,8 +131,9 @@ export function CardDraftOverlay() {
                 const nextLevel = Math.min(def.maxLevel, currentLevel + 1);
                 const levelPill =
                   currentLevel === 0
-                    ? "NEW"
+                    ? "NEW CARD"
                     : `LVL ${currentLevel} → LVL ${nextLevel}`;
+                const statBadges = parseStatBadges(def.statSummary(nextLevel));
 
                 return (
                   <button
@@ -136,15 +146,30 @@ export function CardDraftOverlay() {
                       sendPickCard(cardId);
                     }}
                   >
+                    <span className="draft-card-sheen" aria-hidden="true" />
+
                     <span className="draft-card-top">
-                      <span className="draft-category-pill">{def.category}</span>
+                      <span className="draft-category-pill">
+                        <CardCategoryIcon
+                          category={def.category}
+                          rarity={def.rarity}
+                          size={14}
+                          className="draft-category-svg"
+                        />
+                        <span>{def.category}</span>
+                      </span>
                       <span className="draft-shortcut-pill" aria-hidden="true">
-                        [{idx + 1}]
+                        {idx + 1}
                       </span>
                     </span>
 
-                    <span className="draft-card-icon" aria-hidden="true">
-                      {def.icon}
+                    <span className={`draft-card-emblem draft-card-emblem--${def.rarity}`}>
+                      <CardCategoryIcon
+                        category={def.category}
+                        cardId={def.id}
+                        rarity={def.rarity}
+                        size={52}
+                      />
                     </span>
 
                     <span className="draft-card-heading">
@@ -154,14 +179,35 @@ export function CardDraftOverlay() {
                       </span>
                     </span>
 
-                    <span
-                      className={`draft-level-pill ${currentLevel === 0 ? "draft-level-pill--new" : ""}`}
-                    >
-                      {levelPill}
+                    <span className="draft-level-row">
+                      <span
+                        className={`draft-level-pill ${currentLevel === 0 ? "draft-level-pill--new" : ""}`}
+                      >
+                        {levelPill}
+                      </span>
+                      <span className="draft-level-pips" aria-hidden="true">
+                        {Array.from({ length: def.maxLevel }, (_, pipIdx) => {
+                          const pipNum = pipIdx + 1;
+                          const stateClass =
+                            pipNum <= currentLevel
+                              ? "draft-pip--owned"
+                              : pipNum === nextLevel
+                                ? "draft-pip--next"
+                                : "";
+                          return <span key={pipNum} className={`draft-pip ${stateClass}`} />;
+                        })}
+                      </span>
                     </span>
 
                     <span className="draft-card-desc">{def.description(nextLevel)}</span>
-                    <span className="draft-card-stats">{def.statSummary(nextLevel)}</span>
+
+                    <span className="draft-stat-badges">
+                      {statBadges.map((badge, badgeIdx) => (
+                        <span key={badgeIdx} className="draft-stat-badge">
+                          {badge}
+                        </span>
+                      ))}
+                    </span>
                   </button>
                 );
               })}

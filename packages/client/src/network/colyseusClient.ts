@@ -23,37 +23,17 @@ import { resetWorldRuntime, worldRuntime } from "../game/worldRuntime";
 import { useGameStore } from "../store/gameStore";
 import { useSettingsStore } from "../store/settingsStore";
 import { attachRoomEventListeners } from "./roomEventListeners";
+import { ensureServerAwake, probeServerHealthOnce, SERVER_URL } from "./serverWakeup";
 import { ArenaStateSync, type RawArenaState } from "./stateSync";
 
-const DEFAULT_PROD_SERVER_URL = "wss://upgun-server.onrender.com";
-
-function getFallbackServerUrl(): string {
-  if (
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-  ) {
-    return "ws://localhost:2567";
-  }
-  return DEFAULT_PROD_SERVER_URL;
-}
-
-function normalizeServerUrl(raw: unknown): string {
-  const fallback = getFallbackServerUrl();
-  const value = typeof raw === "string" ? raw.trim() : "";
-  if (!value) {
-    return fallback;
-  }
-  const normalized = value
-    .replace(/^https:\/\//i, "wss://")
-    .replace(/^http:\/\//i, "ws://")
-    .replace(/\/+$/, "");
-  return normalized || fallback;
-}
-
-const SERVER_URL = normalizeServerUrl(import.meta.env.VITE_SERVER_URL);
+export { SERVER_URL } from "./serverWakeup";
 
 const client = new Client(SERVER_URL);
 const stateSync = new ArenaStateSync();
+
+if (typeof window !== "undefined") {
+  void probeServerHealthOnce();
+}
 
 let activeRoom: Room | null = null;
 let connectionSeq = 0;
@@ -152,6 +132,11 @@ async function runConnection(
   useGameStore.getState().setConnecting();
 
   try {
+    await ensureServerAwake();
+    if (token !== connectionSeq) {
+      return false;
+    }
+
     const room = await openRoom();
     if (token !== connectionSeq) {
       void room.leave();

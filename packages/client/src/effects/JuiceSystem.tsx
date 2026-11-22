@@ -10,6 +10,7 @@ import {
 } from "three";
 import { worldRuntime } from "../game/worldRuntime";
 import { DamageNumbers } from "./DamageNumbers";
+import { ImpactParticles } from "./ImpactParticles";
 import { juiceBus, type NeonTracerEvent, type ShockwaveRingEvent } from "./juiceBus";
 import { ViewmodelRifle } from "./ViewmodelRifle";
 
@@ -72,7 +73,7 @@ function JuiceEffectsPass({ baseFov }: { baseFov: number }) {
       camState.fovBoostTarget = 0;
     }
     camState.fovBoostCurrent +=
-      (camState.fovBoostTarget - camState.fovBoostCurrent) * Math.min(1, dt * 22);
+      (camState.fovBoostTarget - camState.fovBoostCurrent) * (1 - Math.exp(-22 * dt));
     if (camState.fovBoostCurrent < 0.01 && camState.fovBoostTarget === 0) {
       camState.fovBoostCurrent = 0;
     }
@@ -115,7 +116,7 @@ function JuiceEffectsPass({ baseFov }: { baseFov: number }) {
       }
     }
 
-    // 3. Pooled neon additive bullet trails
+    // 3. Pooled crisp neon additive bullet beams
     const tracers = activeTracersRef.current;
     juiceBus.drainNeonTracers(tracers);
     for (let i = tracers.length - 1; i >= 0; i--) {
@@ -154,15 +155,15 @@ function JuiceEffectsPass({ baseFov }: { baseFov: number }) {
       scratch.quat.setFromUnitVectors(UP_AXIS, scratch.dir);
 
       const alpha = Math.max(0, 1 - (now - tr.createdAt) / tr.durationMs);
-      const thickness = 0.4 + alpha * 1.15;
+      const thickness = (tr.hit ? 0.55 : 0.38) + alpha * (tr.hit ? 1.35 : 1.05);
 
       mesh.visible = true;
       mesh.position.copy(scratch.mid);
       mesh.quaternion.copy(scratch.quat);
       mesh.scale.set(thickness, len, thickness);
 
-      mat.opacity = alpha * 0.92;
-      mat.color.set(tr.hit ? "#fb7185" : "#38bdf8");
+      mat.opacity = alpha * 0.94;
+      mat.color.set(tr.hit ? (alpha > 0.65 ? "#fef08a" : "#fb7185") : "#38bdf8");
     }
 
     // 4. Pooled explosion shockwave rings & flash spheres
@@ -195,21 +196,21 @@ function JuiceEffectsPass({ baseFov }: { baseFov: number }) {
       }
 
       const t = Math.min(1, Math.max(0, (now - sw.createdAt) / sw.durationMs));
-      const expand = 0.35 + Math.pow(t, 0.48) * sw.radius * 1.2;
+      const expand = 0.35 + Math.pow(t, 0.46) * sw.radius * 1.24;
 
       ring.visible = true;
       ring.position.set(sw.origin.x, sw.origin.y + 0.08, sw.origin.z);
-      ring.scale.set(expand, expand, Math.max(0.3, 1.2 - t * 0.8));
-      ringMat.opacity = Math.max(0, (1 - t) * 0.85);
+      ring.scale.set(expand, expand, Math.max(0.3, 1.25 - t * 0.85));
+      ringMat.opacity = Math.max(0, (1 - t) * 0.88);
       ringMat.color.set(t < 0.25 ? "#fef08a" : t < 0.6 ? "#fb923c" : "#f43f5e");
 
       const flashT = Math.min(1, t / 0.62);
       if (flashT < 1) {
-        const flashScale = 0.3 + Math.pow(flashT, 0.42) * sw.radius * 0.72;
+        const flashScale = 0.3 + Math.pow(flashT, 0.42) * sw.radius * 0.74;
         flash.visible = true;
         flash.position.set(sw.origin.x, sw.origin.y, sw.origin.z);
         flash.scale.setScalar(flashScale);
-        flashMat.opacity = Math.max(0, (1 - flashT) * 0.55);
+        flashMat.opacity = Math.max(0, (1 - flashT) * 0.58);
         flashMat.color.set(flashT < 0.35 ? "#fef9c3" : "#f97316");
       } else {
         flash.visible = false;
@@ -253,7 +254,7 @@ function JuiceEffectsPass({ baseFov }: { baseFov: number }) {
             visible={false}
             frustumCulled={false}
           >
-            <torusGeometry args={[1, 0.05, 8, 32]} />
+            <torusGeometry args={[1, 0.052, 8, 32]} />
             <meshBasicMaterial
               ref={(el) => {
                 ringMatRefs.current[idx] = el;
@@ -300,6 +301,7 @@ export function JuiceSystem({
   return (
     <group name="juice_system">
       <JuiceEffectsPass baseFov={baseFov} />
+      <ImpactParticles />
       {showDamageNumbers ? <DamageNumbers /> : null}
       {showViewmodel ? <ViewmodelRifle /> : null}
     </group>

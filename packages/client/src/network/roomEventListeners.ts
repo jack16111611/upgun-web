@@ -19,6 +19,7 @@ import {
 import { soundEngine } from "../audio/soundEngine";
 import { pushTeleportFlash } from "../components/arena";
 import { commsStore, voiceChatManager } from "../components/comms";
+import { pushDamageDirection } from "../components/DamageDirectionArcs";
 import { pushAnnouncementBanner } from "../components/match";
 import { useSpectatorStore } from "../components/spectator";
 import { juiceBus } from "../effects";
@@ -72,6 +73,12 @@ export function attachRoomEventListeners(room: Room): void {
     }
     if (event.targetId === room.sessionId) {
       juiceBus.triggerScreenShake(event.killed ? 0.55 : 0.25);
+      const shooterSnap = worldRuntime.players.get(event.shooterId);
+      if (shooterSnap) {
+        pushDamageDirection({ x: shooterSnap.x, z: shooterSnap.z });
+      } else {
+        pushDamageDirection({ x: event.point.x, z: event.point.z });
+      }
     }
   });
 
@@ -85,6 +92,9 @@ export function attachRoomEventListeners(room: Room): void {
         localSnap.y - event.position.y,
         localSnap.z - event.position.z,
       );
+      if (dist < event.radius * 1.35) {
+        pushDamageDirection({ x: event.position.x, z: event.position.z });
+      }
     }
     soundEngine.playExplosion(dist);
     if (dist < event.radius * 2.5) {

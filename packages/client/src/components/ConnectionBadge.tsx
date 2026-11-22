@@ -1,3 +1,4 @@
+import { useServerWakeStore } from "../network/serverWakeup";
 import { useGameStore } from "../store/gameStore";
 
 export function ConnectionBadge() {
@@ -5,17 +6,32 @@ export function ConnectionBadge() {
   const roomId = useGameStore((s) => s.roomId);
   const isPrivateRoom = useGameStore((s) => s.isPrivateRoom);
 
-  let modClass = "hud-badge--idle";
-  let label = "Lobby: Offline";
+  const wakePhase = useServerWakeStore((s) => s.wakePhase);
+  const wakeElapsedSec = useServerWakeStore((s) => s.wakeElapsedSec);
+  const serverPingMs = useServerWakeStore((s) => s.serverPingMs);
 
-  if (status === "connecting") {
-    modClass = "hud-badge--connecting";
-    label = "Server: Connecting...";
-  } else if (status === "connected") {
+  const pingSuffix = serverPingMs !== null ? ` • ${serverPingMs} ms` : "";
+
+  let modClass = "hud-badge--idle";
+  let label = "Server: Standby";
+
+  if (status === "connected") {
     modClass = "hud-badge--connected";
     label = roomId
-      ? `Room: ${roomId}${isPrivateRoom ? " (Private)" : ""}`
-      : "Server: Connected";
+      ? `Room: ${roomId}${isPrivateRoom ? " (Private)" : ""}${pingSuffix}`
+      : `Connected${pingSuffix}`;
+  } else if (wakePhase === "waking") {
+    modClass = "hud-badge--connecting";
+    label = `Waking server... ${wakeElapsedSec}s`;
+  } else if (status === "connecting") {
+    modClass = "hud-badge--connecting";
+    label = "Server: Connecting...";
+  } else if (wakePhase === "ready") {
+    modClass = "hud-badge--connected";
+    label = serverPingMs !== null ? `Ready • ${serverPingMs} ms` : "Server Ready";
+  } else if (wakePhase === "error") {
+    modClass = "hud-badge--idle";
+    label = "Server: Offline";
   }
 
   return (

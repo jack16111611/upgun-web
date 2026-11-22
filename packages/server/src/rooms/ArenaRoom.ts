@@ -141,6 +141,7 @@ export class ArenaRoom extends Room<{ state: ArenaState }> {
       },
     });
 
+    this.setPatchRate(50);
     this.setFixedTimestep((ctx) => this.stepSimulation(ctx), TICK_RATE);
   }
 
