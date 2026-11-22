@@ -132,6 +132,8 @@ async function runConnection(
   useGameStore.getState().setConnecting();
 
   try {
+    // Probes ${HTTP_SERVER_URL}/api/status; exits immediately and falls through
+    // to direct Colyseus connection if blocked by an ad-blocker/extension (<250ms).
     await ensureServerAwake();
     if (token !== connectionSeq) {
       return false;

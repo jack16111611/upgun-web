@@ -5,6 +5,8 @@ const PROBE_TIMEOUT_MS = 4000;
 const RETRY_INTERVAL_MS = 1500;
 const MAX_WAKE_DURATION_MS = 60_000;
 const FRESH_READY_WINDOW_MS = 15_000;
+const BLOCKED_FAST_FAIL_MS = 250;
+const MAX_CONSECUTIVE_BLOCKED_ERRORS = 2;
 
 export type ServerWakePhase = "idle" | "waking" | "ready" | "error";
 
@@ -18,6 +20,8 @@ export interface ServerWakeState {
 export interface HealthProbeResult {
   ok: boolean;
   pingMs: number | null;
+  durationMs: number;
+  blockedLikely: boolean;
   error: string | null;
 }
 
@@ -51,7 +55,7 @@ export const HTTP_SERVER_URL = SERVER_URL
   .replace(/^ws:\/\//i, "http://")
   .replace(/\/+$/, "");
 
-const HEALTH_URL = `${HTTP_SERVER_URL}/health`;
+const STATUS_URL = `${HTTP_SERVER_URL}/api/status`;
 
 export const useServerWakeStore = create<ServerWakeState>(() => ({
   wakePhase: "idle",
@@ -73,28 +77,53 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-async function fetchHealthOnce(): Promise<HealthProbeResult> {
+async function fetchStatusOnce(): Promise<HealthProbeResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   const startedAt = nowMs();
 
   try {
-    const response = await fetch(HEALTH_URL, {
+    const response = await fetch(STATUS_URL, {
       method: "GET",
       cache: "no-store",
       signal: controller.signal,
     });
-    const pingMs = Math.max(1, Math.round(nowMs() - startedAt));
+    const durationMs = Math.max(1, Math.round(nowMs() - startedAt));
     if (response.ok) {
-      return { ok: true, pingMs, error: null };
+      return {
+        ok: true,
+        pingMs: durationMs,
+        durationMs,
+        blockedLikely: false,
+        error: null,
+      };
     }
-    return { ok: false, pingMs: null, error: `Server responded with HTTP ${response.status}` };
+    return {
+      ok: false,
+      pingMs: null,
+      durationMs,
+      blockedLikely: false,
+      error: `Server responded with HTTP ${response.status}`,
+    };
   } catch (err: unknown) {
+    const durationMs = Math.max(0, Math.round(nowMs() - startedAt));
     if (err instanceof DOMException && err.name === "AbortError") {
-      return { ok: false, pingMs: null, error: "Server health check timed out" };
+      return {
+        ok: false,
+        pingMs: null,
+        durationMs,
+        blockedLikely: false,
+        error: "Server status check timed out",
+      };
     }
     const message = err instanceof Error && err.message ? err.message : "Network error";
-    return { ok: false, pingMs: null, error: message };
+    return {
+      ok: false,
+      pingMs: null,
+      durationMs,
+      blockedLikely: true,
+      error: message,
+    };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -106,6 +135,8 @@ export async function probeServerHealthOnce(): Promise<HealthProbeResult> {
     return {
       ok: state.wakePhase === "ready",
       pingMs: state.serverPingMs,
+      durationMs: state.serverPingMs ?? 0,
+      blockedLikely: false,
       error: state.lastError,
     };
   }
@@ -128,7 +159,7 @@ export async function probeServerHealthOnce(): Promise<HealthProbeResult> {
     }, 250);
   }
 
-  const result = await fetchHealthOnce();
+  const result = await fetchStatusOnce();
   if (tickTimer !== null) {
     clearInterval(tickTimer);
   }
@@ -149,7 +180,7 @@ export async function probeServerHealthOnce(): Promise<HealthProbeResult> {
     useServerWakeStore.setState({
       wakePhase: "idle",
       wakeElapsedSec: 0,
-      lastError: result.error,
+      lastError: result.blockedLikely && result.durationMs < BLOCKED_FAST_FAIL_MS ? null : result.error,
     });
   }
 
@@ -181,9 +212,10 @@ export async function ensureServerAwake(): Promise<boolean> {
 
     try {
       let lastError: string | null = null;
+      let consecutiveBlockedErrors = 0;
 
       while (Date.now() - startedAt < MAX_WAKE_DURATION_MS) {
-        const result = await fetchHealthOnce();
+        const result = await fetchStatusOnce();
         if (result.ok) {
           lastReadyAtMs = Date.now();
           useServerWakeStore.setState({
@@ -195,6 +227,25 @@ export async function ensureServerAwake(): Promise<boolean> {
           return true;
         }
 
+        // Fast rejection (< 250ms) or 2 consecutive blocked/extension errors:
+        // bail out immediately so Colyseus room connection proceeds unblocked.
+        if (result.blockedLikely) {
+          consecutiveBlockedErrors += 1;
+          if (
+            result.durationMs < BLOCKED_FAST_FAIL_MS ||
+            consecutiveBlockedErrors >= MAX_CONSECUTIVE_BLOCKED_ERRORS
+          ) {
+            useServerWakeStore.setState({
+              wakePhase: "idle",
+              wakeElapsedSec: 0,
+              lastError: null,
+            });
+            return false;
+          }
+        } else {
+          consecutiveBlockedErrors = 0;
+        }
+
         lastError = result.error;
         const remainingMs = MAX_WAKE_DURATION_MS - (Date.now() - startedAt);
         if (remainingMs <= 0) {
@@ -203,10 +254,9 @@ export async function ensureServerAwake(): Promise<boolean> {
         await sleep(Math.min(RETRY_INTERVAL_MS, remainingMs));
       }
 
-      const timeoutMsg =
-        lastError
-          ? `Game server failed to wake within 60s (${lastError}).`
-          : "Game server did not respond within 60s.";
+      const timeoutMsg = lastError
+        ? `Game server failed to wake within 60s (${lastError}).`
+        : "Game server did not respond within 60s.";
       useServerWakeStore.setState({
         wakePhase: "error",
         wakeElapsedSec: Math.round(MAX_WAKE_DURATION_MS / 1000),

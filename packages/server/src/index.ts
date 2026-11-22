@@ -28,8 +28,17 @@ function resolveCorsOrigin(requestOrigin: string | null, allowed: readonly strin
   return allowed[0] ?? DEFAULT_ORIGIN;
 }
 
+function resolveStatusCorsOrigin(requestOrigin: string | null, allowed: readonly string[]): string {
+  const normalized = requestOrigin?.trim().replace(/\/+$/, "") ?? "";
+  if (normalized && (allowed.includes("*") || allowed.includes(normalized))) {
+    return normalized;
+  }
+  return "*";
+}
+
 const ALLOWED_ORIGINS = parseAllowedOrigins(process.env.CLIENT_ORIGIN);
 
+// Global CORS headers & OPTIONS (204) preflight handling via Colyseus router middleware
 matchMaker.controller.getCorsHeaders = (headers: Headers) => ({
   "Access-Control-Allow-Origin": resolveCorsOrigin(headers.get("origin"), ALLOWED_ORIGINS),
   "Access-Control-Allow-Credentials": "true",
@@ -43,9 +52,36 @@ const gameServer = new Server({
 });
 
 gameServer.router = createRouter({
-  health: createEndpoint("/health", { method: "GET" }, async () =>
-    Response.json({ ok: true, uptime: process.uptime() }, { status: 200 }),
-  ),
+  status: createEndpoint("/api/status", { method: "GET" }, async (ctx) => {
+    const allowOrigin = resolveStatusCorsOrigin(ctx.headers?.get("origin") ?? null, ALLOWED_ORIGINS);
+    return Response.json(
+      { ok: true, timestamp: Date.now() },
+      {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": allowOrigin,
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Vary": "Origin",
+        },
+      },
+    );
+  }),
+  health: createEndpoint("/health", { method: "GET" }, async (ctx) => {
+    const allowOrigin = resolveStatusCorsOrigin(ctx.headers?.get("origin") ?? null, ALLOWED_ORIGINS);
+    return Response.json(
+      { ok: true, uptime: process.uptime() },
+      {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": allowOrigin,
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+          "Vary": "Origin",
+        },
+      },
+    );
+  }),
 });
 
 gameServer.define(ARENA_ROOM_NAME, ArenaRoom);
